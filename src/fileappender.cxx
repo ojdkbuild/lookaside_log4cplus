@@ -396,8 +396,9 @@ FileAppender::reopen()
         {
             // Close the current file
             out.close();
-            out.clear(); // reset flags since the C++ standard specified that all the
-                         // flags should remain unchanged on a close
+            // reset flags since the C++ standard specified that all
+            // the flags should remain unchanged on a close
+            out.clear();
 
             // Re-open the file.
             open(std::ios_base::out | std::ios_base::ate);
@@ -488,11 +489,20 @@ RollingFileAppender::~RollingFileAppender()
 void
 RollingFileAppender::append(const spi::InternalLoggingEvent& event)
 {
+    // Seek to the end of log file so that tellp() below returns the
+    // right size.
+    if (useLockFile)
+        out.seekp (0, std::ios_base::end);
+
+    // Rotate log file if needed before appending to it.
+    if (out.tellp() > maxFileSize)
+        rollover(true);
+
     FileAppender::append(event);
 
-    if(out.tellp() > maxFileSize) {
+    // Rotate log file if needed after appending to it.
+    if (out.tellp() > maxFileSize)
         rollover(true);
-    }
 }
 
 
@@ -739,8 +749,9 @@ DailyRollingFileAppender::rollover(bool alreadyLocked)
 
     // Close the current file
     out.close();
-    out.clear(); // reset flags since the C++ standard specified that all the
-                 // flags should remain unchanged on a close
+    // reset flags since the C++ standard specified that all the flags
+    // should remain unchanged on a close
+    out.clear();
 
     // If we've already rolled over this time period, we'll make sure that we
     // don't overwrite any of those previous files.

@@ -1,3 +1,58 @@
+log4cplus 1.1.2
+
+- Added AbstractSocket::shutdown().
+
+- Added missing documentation of MDC pattern layout converter.
+
+- Fixed bug #278 - TLS key leak.
+
+- Implemented %E{ENVVAR} pattern layout formatter for expansion of environment
+  variables.
+
+log4cplus 1.1.2-RC3
+
+- Fixed build issues on HP-UX with aCC.
+
+- Fixed build issues on Haiku.
+
+- Added mingw-log4cplus.spec to allow cross-compilation from
+  Fedora. (John Smits)
+
+- Fixed build issues on AIX with XLC.
+
+- Fixed build issues related to Microsoft's foo_s() functions with
+  some version of MinGW tool-chain.
+
+- Tiny speedup of getFormattedTime().
+
+- Imported newer android/android.toolchain.cmake from OpenCV
+  repository.
+
+
+log4cplus 1.1.2-RC2
+
+- Fixed crash of DLL builds on Windows when _WIN32_WINNT>=0x0600.
+
+- Roll log file both before and after append to avoid logging into
+  stale file when the log file has already been rolled by another
+  logging process.
+
+- Known issue: Logging into a single log file from multiple processes
+  on Windows breaks the rolling of the log files because open files
+  cannot be renamed.
+
+- Fixed bug #166 - Close appender only once even when it is used by
+  multiple loggers.
+
+
+log4cplus 1.1.2-RC1
+
+- Fixed bug #163 - Initialization issue.
+
+- Added --enable-so-version and --enable-release-version configure
+  script options to allow production of undecorated binaries.
+
+
 log4cplus 1.1.1
 
 - FileAppender - Accept also std::ios_base::ate as "append to a log

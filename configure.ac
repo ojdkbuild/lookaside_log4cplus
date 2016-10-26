@@ -4,7 +4,7 @@ dnl autoconf-2.69
 dnl automake-1.12.6
 dnl libtool-2.4.2
 
-AC_INIT([log4cplus],[1.1.1])
+AC_INIT([log4cplus],[1.1.2])
 AC_CANONICAL_TARGET
 AC_CONFIG_SRCDIR([src/logger.cxx])
 AC_CONFIG_MACRO_DIR([m4])
@@ -18,7 +18,7 @@ AM_PROG_AR
 #  ? :+1 : ?   == just some internal changes, nothing breaks but might work
 #                 better
 # CURRENT : REVISION : AGE
-LT_VERSION=7:0:0
+LT_VERSION=9:0:0
 LT_RELEASE=1.1
 AC_SUBST([LT_VERSION])
 AC_SUBST([LT_RELEASE])
@@ -103,6 +103,24 @@ AC_ARG_ENABLE([warnings],
   [LOG4CPLUS_CHECK_YESNO([${enableval}], [--enable-warnings])],
   [enable_warnings=yes])
 
+dnl Enable SO version.
+
+AC_ARG_ENABLE([so-version],
+  [AC_HELP_STRING([--enable-so-version], [Use libtool -version-info option.])],
+  [LOG4CPLUS_CHECK_YESNO([${enableval}], [--enable-so-version])],
+  [enable_so_version=yes])
+AM_CONDITIONAL([ENABLE_VERSION_INFO_OPTION],
+  [test "x$enable_so_version" = "xyes"])
+
+dnl Enable release version.
+
+AC_ARG_ENABLE([release-version],
+  [AC_HELP_STRING([--enable-release-version], [Use libtool -release option.])],
+  [LOG4CPLUS_CHECK_YESNO([${enableval}], [--enable-release-version])],
+  [enable_release_version=yes])
+AM_CONDITIONAL([ENABLE_RELEASE_OPTION],
+  [test "x$enable_release_version" = "xyes"])
+
 dnl Check for c/c++ compilers.
 
 AC_PROG_CXX
@@ -146,7 +164,11 @@ AS_IF([test "x$enable_warnings" = "xyes"],
     [sun], [],
     [AX_CXXFLAGS_WARN_ALL])])
 
+LOG4CPLUS_AIX_XLC_LDFLAGS=
 AS_CASE([$ax_cv_cxx_compiler_vendor],
+  [ibm],
+  [AS_VAR_APPEND([CXXFLAGS], [" -qroconst"])
+   AS_VAR_APPEND([LOG4CPLUS_AIX_XLC_LDFLAGS], [" -qmkshrobj=-300"])],
   [gnu|clang],
   [AX_CXXFLAGS_GCC_OPTION([-fdiagnostics-show-caret])
    AS_IF([test "x$enable_warnings" = "xyes"],
@@ -253,6 +275,7 @@ AS_CASE([$ax_cv_cxx_compiler_vendor],
 
    dnl Adding -library=Crun is always necessary.
    AX_CXXFLAGS_SUN_OPTION([-library=Crun])])
+AC_SUBST([LOG4CPLUS_AIX_XLC_LDFLAGS])
 
 AX_DECLSPEC([LOG4CPLUS_DECLSPEC])
 AS_IF([test "x$ac_cv_declspec" = "xyes" dnl
@@ -300,8 +323,8 @@ AC_SEARCH_LIBS([clock_gettime], [rt posix4])
 dnl On some systems libcompat exists only as a static library which
 dnl breaks compilation of shared library log4cplus.
 dnl AC_SEARCH_LIBS([ftime], [compat])
-AC_SEARCH_LIBS([gethostbyname], [nsl])
-AC_SEARCH_LIBS([setsockopt], [socket])
+AC_SEARCH_LIBS([gethostbyname], [nsl network net])
+AC_SEARCH_LIBS([setsockopt], [socket network net])
 AS_IF([test "x$with_iconv" = "xyes"],
   [AC_SEARCH_LIBS([iconv_open], [iconv], [],
      [AC_SEARCH_LIBS([libiconv_open], [iconv])])])
@@ -441,6 +464,7 @@ LOG4CPLUS_CHECK_FUNCS([htons], [LOG4CPLUS_HAVE_HTONS])
 LOG4CPLUS_CHECK_FUNCS([ntohs], [LOG4CPLUS_HAVE_NTOHS])
 LOG4CPLUS_CHECK_FUNCS([htonl], [LOG4CPLUS_HAVE_HTONL])
 LOG4CPLUS_CHECK_FUNCS([ntohl], [LOG4CPLUS_HAVE_NTOHL])
+LOG4CPLUS_CHECK_FUNCS([shutdown], [LOG4CPLUS_HAVE_SHUTDOWN])
 LOG4CPLUS_CHECK_FUNCS([mbstowcs], [LOG4CPLUS_HAVE_MBSTOWCS])
 LOG4CPLUS_CHECK_FUNCS([wcstombs], [LOG4CPLUS_HAVE_WCSTOMBS])
 AS_IF([test "x$with_iconv" = "xyes"],
