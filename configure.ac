@@ -1,10 +1,10 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl This version of log4cplus requires the follwing autotools versions:
 dnl autoconf-2.69
-dnl automake-1.12
+dnl automake-1.12.6
 dnl libtool-2.4.2
 
-AC_INIT([log4cplus],[1.1.0])
+AC_INIT([log4cplus],[1.1.1])
 AC_CANONICAL_TARGET
 AC_CONFIG_SRCDIR([src/logger.cxx])
 AC_CONFIG_MACRO_DIR([m4])
@@ -18,7 +18,7 @@ AM_PROG_AR
 #  ? :+1 : ?   == just some internal changes, nothing breaks but might work
 #                 better
 # CURRENT : REVISION : AGE
-LT_VERSION=5:0:0
+LT_VERSION=7:0:0
 LT_RELEASE=1.1
 AC_SUBST([LT_VERSION])
 AC_SUBST([LT_RELEASE])
@@ -148,7 +148,8 @@ AS_IF([test "x$enable_warnings" = "xyes"],
 
 AS_CASE([$ax_cv_cxx_compiler_vendor],
   [gnu|clang],
-  [AS_IF([test "x$enable_warnings" = "xyes"],
+  [AX_CXXFLAGS_GCC_OPTION([-fdiagnostics-show-caret])
+   AS_IF([test "x$enable_warnings" = "xyes"],
      [AX_CXXFLAGS_GCC_OPTION([-Wextra])
       dnl The -ansi switch sets __STRICT_ANSI__ which disables some
       dnl useful function declarations in MinGW and Cygwin headers.
@@ -178,12 +179,17 @@ AS_CASE([$ax_cv_cxx_compiler_vendor],
 
    AS_IF([test "x$enable_debugging" = "xyes"],
      [AX_CXXFLAGS_GCC_OPTION([-g3])
-      AX_CXXFLAGS_GCC_OPTION([-fkeep-inline-functions])
-      AX_CXXFLAGS_GCC_OPTION([-fstack-check])
-      AX_CXXFLAGS_GCC_OPTION([-fstack-protector])
+      dnl AX_CXXFLAGS_GCC_OPTION([-fkeep-inline-functions])
+      AS_CASE(["$target_os"],
+        dnl Disable these for MinGW32 as it seems to generate DLLs that
+        dnl segfault in DllMain().
+        [mingw32], [],
+        [AX_CXXFLAGS_GCC_OPTION([-fstack-check])
+         AX_CXXFLAGS_GCC_OPTION([-fstack-protector])])
       dnl -Wstack-protector results into not too interesting warnings.
       dnl AX_CXXFLAGS_GCC_OPTION([-Wstack-protector])
-      AX_CXXFLAGS_GCC_OPTION([-ftrapv])],
+      AX_CXXFLAGS_GCC_OPTION([-ftrapv])
+      AX_CXXFLAGS_GCC_OPTION([-ftrack-macro-expansion])],
      [AC_REQUIRE([AC_PROG_GREP])
       AS_IF([AS_ECHO_N(["$CXXFLAGS"]) dnl
              | $GREP -e ['\(^\|[[:space:]]\)-O\([^[:space:]]*\([[:space:]]\|$\)\)'] >/dev/null],
@@ -333,6 +339,7 @@ LOG4CPLUS_CHECK_HEADER([wchar.h], [LOG4CPLUS_HAVE_WCHAR_H])
 LOG4CPLUS_CHECK_HEADER([time.h], [LOG4CPLUS_HAVE_TIME_H])
 LOG4CPLUS_CHECK_HEADER([errno.h], [LOG4CPLUS_HAVE_ERRNO_H])
 LOG4CPLUS_CHECK_HEADER([limits.h], [LOG4CPLUS_HAVE_LIMITS_H])
+LOG4CPLUS_CHECK_HEADER([poll.h], [LOG4CPLUS_HAVE_POLL_H])
 AS_IF([test "x$with_iconv" = "xyes"],
   [LOG4CPLUS_CHECK_HEADER([iconv.h], [LOG4CPLUS_HAVE_ICONV_H])])
 
@@ -392,12 +399,15 @@ dnl Multi threaded library.
    AX_TLS_SUPPORT
    AH_TEMPLATE([LOG4CPLUS_HAVE_TLS_SUPPORT])
    AH_TEMPLATE([LOG4CPLUS_THREAD_LOCAL_VAR])
-   AS_IF([test "x$ac_cv_declspec_thread" = "xyes"],
+   AS_IF([test "x$ac_cv_thread_local" = "xyes"],
      [AC_DEFINE([LOG4CPLUS_HAVE_TLS_SUPPORT])
-      AC_DEFINE([LOG4CPLUS_THREAD_LOCAL_VAR], [__declspec(thread)])],
-     [AS_IF([test "x$ac_cv__thread_keyword" = "xyes"],
-       [AC_DEFINE([LOG4CPLUS_HAVE_TLS_SUPPORT])
-        AC_DEFINE([LOG4CPLUS_THREAD_LOCAL_VAR], [__thread])])])],
+      AC_DEFINE([LOG4CPLUS_THREAD_LOCAL_VAR], [thread_local])],
+     [AS_IF([test "x$ac_cv_declspec_thread" = "xyes"],
+        [AC_DEFINE([LOG4CPLUS_HAVE_TLS_SUPPORT])
+         AC_DEFINE([LOG4CPLUS_THREAD_LOCAL_VAR], [__declspec(thread)])],
+        [AS_IF([test "x$ac_cv__thread_keyword" = "xyes"],
+           [AC_DEFINE([LOG4CPLUS_HAVE_TLS_SUPPORT])
+            AC_DEFINE([LOG4CPLUS_THREAD_LOCAL_VAR], [__thread])])])])],
 
 dnl Single threaded library.
   [AC_MSG_NOTICE([Creating a single-threaded library])
@@ -418,6 +428,9 @@ LOG4CPLUS_CHECK_FUNCS([nanosleep], [LOG4CPLUS_HAVE_NANOSLEEP])
 LOG4CPLUS_CHECK_FUNCS([clock_nanosleep], [LOG4CPLUS_HAVE_CLOCK_NANOSLEEP])
 LOG4CPLUS_CHECK_FUNCS([clock_gettime], [LOG4CPLUS_HAVE_CLOCK_GETTIME])
 LOG4CPLUS_CHECK_FUNCS([getpid], [LOG4CPLUS_HAVE_GETPID])
+LOG4CPLUS_CHECK_FUNCS([poll], [LOG4CPLUS_HAVE_POLL])
+LOG4CPLUS_CHECK_FUNCS([pipe], [LOG4CPLUS_HAVE_PIPE])
+LOG4CPLUS_CHECK_FUNCS([pipe2], [LOG4CPLUS_HAVE_PIPE2])
 LOG4CPLUS_CHECK_FUNCS([ftime], [LOG4CPLUS_HAVE_FTIME])
 LOG4CPLUS_CHECK_FUNCS([stat], [LOG4CPLUS_HAVE_STAT])
 LOG4CPLUS_CHECK_FUNCS([lstat], [LOG4CPLUS_HAVE_LSTAT])
@@ -441,7 +454,8 @@ AS_IF([test "x$with_iconv" = "xyes"],
 dnl Various functions used by snprintf.cxx.
 
 LOG4CPLUS_CHECK_FUNCS([vsnprintf], [LOG4CPLUS_HAVE_VSNPRINTF])
-LOG4CPLUS_CHECK_FUNCS([_vsnprintf], [LOG4CPLUS_HAVE__VSNPRINTF])
+LOG4CPLUS_CHECK_FUNCS([vsnwprintf], [LOG4CPLUS_HAVE_VSNWPRINTF])
+LOG4CPLUS_CHECK_FUNCS([_vsnwprintf], [LOG4CPLUS_HAVE__VSNWPRINTF])
 LOG4CPLUS_CHECK_FUNCS([vsprintf_s], [LOG4CPLUS_HAVE_VSPRINTF_S])
 LOG4CPLUS_CHECK_FUNCS([vswprintf_s], [LOG4CPLUS_HAVE_VSWPRINTF_S])
 LOG4CPLUS_CHECK_FUNCS([vfprintf_s], [LOG4CPLUS_HAVE_VFPRINTF_S])

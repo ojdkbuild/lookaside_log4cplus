@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-//  Copyright (C) 2012, Vaclav Zeman. All rights reserved.
+//  Copyright (C) 2012-2013, Vaclav Zeman. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without modifica-
 //  tion, are permitted provided that the following conditions are met:
@@ -91,16 +91,22 @@ namespace log4cplus { namespace helpers {
 
 
 #if defined (_WIN32)
+#if defined (__BORLANDC__)
+int const OPEN_FLAGS = O_RDWR | O_CREAT | O_NOINHERIT;
+int const OPEN_SHFLAGS = SH_DENYNO;
+int const OPEN_MODE = S_IREAD | S_IWRITE;
+#else
 int const OPEN_FLAGS = _O_RDWR | _O_CREAT /*| _O_TEMPORARY*/ | _O_NOINHERIT;
 int const OPEN_SHFLAGS = _SH_DENYNO;
 int const OPEN_MODE = _S_IREAD | _S_IWRITE;
+#endif
 
 namespace
 {
 
 static
 HANDLE
-get_os_HANDLE (int fd, helpers::LogLog & loglog)
+get_os_HANDLE (int fd, helpers::LogLog & loglog = helpers::getLogLog ())
 {
     HANDLE fh = reinterpret_cast<HANDLE>(_get_osfhandle (fd));
     if (fh == INVALID_HANDLE_VALUE)
@@ -124,6 +130,52 @@ mode_t const OPEN_MODE = (S_IRWXU ^ S_IXUSR)
     | (S_IRWXO ^ S_IXOTH);
 
 #endif
+
+
+//! Helper function that sets FD_CLOEXEC on descriptor on platforms
+//! that support it.
+LOG4CPLUS_PRIVATE
+bool
+trySetCloseOnExec (int fd, helpers::LogLog & loglog = helpers::getLogLog ())
+{
+#if defined (WIN32)
+    int ret = SetHandleInformation (get_os_HANDLE (fd), HANDLE_FLAG_INHERIT, 0);
+    if (! ret)
+    {
+        DWORD eno = GetLastError ();
+        loglog.warn (
+            tstring (
+                LOG4CPLUS_TEXT ("could not unset HANDLE_FLAG_INHERIT on fd: "))
+            + convertIntegerToString (fd)
+            + LOG4CPLUS_TEXT (", errno: ")
+            + convertIntegerToString (eno));
+        return false;        
+    }
+
+#elif defined (FD_CLOEXEC)
+    int ret = fcntl (fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1)
+    {
+        int eno = errno;
+        loglog.warn (
+            tstring (LOG4CPLUS_TEXT ("could not set FD_CLOEXEC on fd: "))
+            + convertIntegerToString (fd)
+            + LOG4CPLUS_TEXT (", errno: ")
+            + convertIntegerToString (eno));
+        return false;
+    }
+#else
+    return false;
+
+#endif
+
+    return true;
+}
+
+
+//
+//
+//
 
 struct LockFile::Impl
 {
@@ -166,9 +218,17 @@ LockFile::open (int open_flags) const
     LogLog & loglog = getLogLog ();
 
 #if defined (_WIN32)
+#  if defined (LOG4CPLUS_HAVE__TSOPEN_S) && defined (_tsopen_s)
     errno_t eno = _tsopen_s (&data->fd, lock_file_name.c_str (), open_flags,
         OPEN_SHFLAGS, OPEN_MODE);
     if (eno != 0)
+#  elif defined (LOG4CPLUS_HAVE__TSOPEN) && defined (_tsopen)
+    data->fd = _tsopen (lock_file_name.c_str (), open_flags, OPEN_SHFLAGS,
+        OPEN_MODE);
+    if (data->fd == -1)
+#  else
+#    error "Neither _tsopen_s() nor _tsopen() is available."
+#  endif
         loglog.error (tstring (LOG4CPLUS_TEXT("could not open or create file "))
             + lock_file_name, true);
 
@@ -180,9 +240,8 @@ LockFile::open (int open_flags) const
             tstring (LOG4CPLUS_TEXT ("could not open or create file "))
             + lock_file_name, true);
 
-#if ! defined (O_CLOEXEC) && defined (FD_CLOEXEC)
-    int ret = fcntl (data->fd, F_SETFD, FD_CLOEXEC);
-    if (ret == -1)
+#if ! defined (O_CLOEXEC)
+    if (! trySetCloseOnExec (data->fd, loglog))
         loglog.warn (
             tstring (LOG4CPLUS_TEXT("could not set FD_CLOEXEC on file "))
             + lock_file_name);

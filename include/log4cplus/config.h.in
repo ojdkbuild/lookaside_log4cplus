@@ -108,6 +108,15 @@
 /* Define to 1 if you have the `ntohs' function. */
 #undef HAVE_NTOHS
 
+/* Define to 1 if you have the `pipe' function. */
+#undef HAVE_PIPE
+
+/* Define to 1 if you have the `pipe2' function. */
+#undef HAVE_PIPE2
+
+/* Define to 1 if you have the `poll' function. */
+#undef HAVE_POLL
+
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
 
@@ -151,6 +160,9 @@
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
 
+/* Define to 1 if you have the `vsnwprintf' function. */
+#undef HAVE_VSNWPRINTF
+
 /* Define to 1 if you have the `vsprintf_s' function. */
 #undef HAVE_VSPRINTF_S
 
@@ -160,11 +172,11 @@
 /* Define to 1 if you have the `wcstombs' function. */
 #undef HAVE_WCSTOMBS
 
-/* Define to 1 if you have the `_vsnprintf' function. */
-#undef HAVE__VSNPRINTF
-
 /* Define to 1 if you have the `_vsnprintf_s' function. */
 #undef HAVE__VSNPRINTF_S
+
+/* Define to 1 if you have the `_vsnwprintf' function. */
+#undef HAVE__VSNWPRINTF
 
 /* Define to 1 if you have the `_vsnwprintf_s' function. */
 #undef HAVE__VSNWPRINTF_S
@@ -311,6 +323,18 @@
 #undef LOG4CPLUS_HAVE_NTOHS
 
 /* */
+#undef LOG4CPLUS_HAVE_PIPE
+
+/* */
+#undef LOG4CPLUS_HAVE_PIPE2
+
+/* */
+#undef LOG4CPLUS_HAVE_POLL
+
+/* */
+#undef LOG4CPLUS_HAVE_POLL_H
+
+/* */
 #undef LOG4CPLUS_HAVE_PRETTY_FUNCTION_MACRO
 
 /* */
@@ -368,6 +392,9 @@
 #undef LOG4CPLUS_HAVE_VSNPRINTF
 
 /* */
+#undef LOG4CPLUS_HAVE_VSNWPRINTF
+
+/* */
 #undef LOG4CPLUS_HAVE_VSPRINTF_S
 
 /* */
@@ -380,10 +407,10 @@
 #undef LOG4CPLUS_HAVE_WCSTOMBS
 
 /* */
-#undef LOG4CPLUS_HAVE__VSNPRINTF
+#undef LOG4CPLUS_HAVE__VSNPRINTF_S
 
 /* */
-#undef LOG4CPLUS_HAVE__VSNPRINTF_S
+#undef LOG4CPLUS_HAVE__VSNWPRINTF
 
 /* */
 #undef LOG4CPLUS_HAVE__VSNWPRINTF_S

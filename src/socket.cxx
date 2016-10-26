@@ -4,7 +4,7 @@
 // Author:  Tad E. Smith
 //
 //
-// Copyright 2003-2010 Tad E. Smith
+// Copyright 2003-2013 Tad E. Smith
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -196,42 +196,6 @@ Socket::write(const std::string & buffer)
         close();
 
     return retval > 0;
-}
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-// ServerSocket ctor and dtor
-//////////////////////////////////////////////////////////////////////////////
-
-ServerSocket::ServerSocket(unsigned short port)
-{
-    sock = openSocket(port, state);
-    if(sock == INVALID_SOCKET_VALUE) {
-        err = get_last_socket_error ();
-    }
-}
-
-
-
-ServerSocket::~ServerSocket()
-{
-}
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-// ServerSocket methods
-//////////////////////////////////////////////////////////////////////////////
-
-Socket
-ServerSocket::accept()
-{
-    SocketState st = not_opened;
-    SOCKET_TYPE clientSock = acceptSocket(sock, st);
-    return Socket(clientSock, st, 0);
 }
 
 

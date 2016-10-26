@@ -122,6 +122,18 @@
 #undef LOG4CPLUS_HAVE_NTOHS
 
 /* */
+#undef LOG4CPLUS_HAVE_PIPE
+
+/* */
+#undef LOG4CPLUS_HAVE_PIPE2
+
+/* */
+#undef LOG4CPLUS_HAVE_POLL
+
+/* */
+#undef LOG4CPLUS_HAVE_POLL_H
+
+/* */
 #undef LOG4CPLUS_HAVE_STAT
 
 /* Define if this is a single-threaded library. */
@@ -183,6 +195,12 @@
 
 /* */
 #undef LOG4CPLUS_HAVE_VSNPRINTF
+
+/* Define to 1 if you have the `vsnwprintf' function. */
+#undef LOG4CPLUS_HAVE_VSNWPRINTF
+
+/* Define to 1 if you have the `_vsnwprintf' function. */
+#undef LOG4CPLUS_HAVE__VSNWPRINTF
 
 /* */
 #undef LOG4CPLUS_HAVE__VSNPRINTF
