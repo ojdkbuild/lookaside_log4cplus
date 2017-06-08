@@ -18,6 +18,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(_WIN32) && defined(LOG4CPLUS_OFSTREAM_OPEN_NONINHERIT) 
+#define UNICODE
+#define _UNICODE
+#include <windows.h>
+#undef UNICODE
+#include <io.h>
+#include <fcntl.h>
+#endif
+
 #include <log4cplus/fileappender.h>
 #include <log4cplus/layout.h>
 #include <log4cplus/streams.h>
@@ -44,12 +53,6 @@
 #include <errno.h>
 #endif
 
-#if defined(_WIN32) && defined(LOG4CPLUS_OFSTREAM_OPEN_NONINHERIT) 
-#include <windows.h>
-#include <io.h>
-#include <fcntl.h>
-#endif
-
 namespace log4cplus
 {
 
@@ -68,6 +71,20 @@ const long MINIMUM_ROLLING_LOG_SIZE = 200*1024L;
 namespace
 {
 
+#if defined(_WIN32) && defined(LOG4CPLUS_OFSTREAM_OPEN_NONINHERIT) 
+std::wstring widen(const std::string& st) {
+    if (st.empty()) return std::wstring();
+    auto size_needed = ::MultiByteToWideChar(CP_UTF8, 0, st.c_str(), static_cast<int> (st.length()), nullptr, 0);
+    if (0 == size_needed) return std::wstring();
+    std::wstring res{};
+    res.resize(size_needed);
+    auto buf = std::addressof(res.front());
+    int chars_copied = ::MultiByteToWideChar(CP_UTF8, 0, st.c_str(), static_cast<int> (st.size()), buf, size_needed);
+    if (chars_copied != size_needed) return std::wstring();
+    return res;
+}
+#endif
+
 long const LOG4CPLUS_FILE_NOT_FOUND = ENOENT;
 
 
@@ -75,8 +92,10 @@ static
 long
 file_rename (tstring const & src, tstring const & target)
 {
-#if defined (UNICODE) && defined (_WIN32)
-    if (_wrename (src.c_str (), target.c_str ()) == 0)
+#if defined(_WIN32) && defined(LOG4CPLUS_OFSTREAM_OPEN_NONINHERIT) 
+    auto wsrc = widen(src);
+    auto wtarget = widen(target);
+    if (_wrename (wsrc.c_str (), wtarget.c_str ()) == 0)
         return 0;
     else
         return errno;
@@ -96,8 +115,9 @@ static
 long
 file_remove (tstring const & src)
 {
-#if defined (UNICODE) && defined (_WIN32)
-    if (_wremove (src.c_str ()) == 0)
+#if defined(_WIN32) && defined(LOG4CPLUS_OFSTREAM_OPEN_NONINHERIT) 
+    auto wsrc = widen(src);
+    if (_wremove (wsrc.c_str ()) == 0)
         return 0;
     else
         return errno;
@@ -388,25 +408,28 @@ FileAppender::open(std::ios::openmode mode)
     // https://stackoverflow.com/a/5253726/314015
     bool open_success = false;
     auto create_attrs = (mode & std::ios::trunc) ? CREATE_ALWAYS : OPEN_ALWAYS;
-    auto handle = ::CreateFileA(name.c_str(), GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            NULL, // lpSecurityAttributes
-            create_attrs, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (INVALID_HANDLE_VALUE != handle) {
-        bool seek_success = true;
-        if (mode & std::ios::ate) {
-            auto err = ::SetFilePointer(handle, 0, NULL, FILE_END);
-            seek_success = INVALID_SET_FILE_POINTER != err;
-        }
-        if (seek_success) {
-            auto fd_flags = (mode & std::ios::app) ? _O_APPEND : 0;
-            auto fd = ::_open_osfhandle(reinterpret_cast<intptr_t>(handle), fd_flags);
-            if (-1 != fd) {
-                auto fdesc = ::_fdopen(fd, "a");
-                if (nullptr != fdesc) {
-                    out = std::ofstream(fdesc);
-                    if (out.good()) {
-                        open_success = true;
+    auto wname = widen(name);
+    if (!wname.empty()) {
+        auto handle = ::CreateFileW(wname.c_str(), GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                NULL, // lpSecurityAttributes
+                create_attrs, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (INVALID_HANDLE_VALUE != handle) {
+            bool seek_success = true;
+            if (mode & std::ios::ate) {
+                auto err = ::SetFilePointer(handle, 0, NULL, FILE_END);
+                seek_success = INVALID_SET_FILE_POINTER != err;
+            }
+            if (seek_success) {
+                auto fd_flags = (mode & std::ios::app) ? _O_APPEND : 0;
+                auto fd = ::_open_osfhandle(reinterpret_cast<intptr_t>(handle), fd_flags);
+                if (-1 != fd) {
+                    auto fdesc = ::_fdopen(fd, "a");
+                    if (nullptr != fdesc) {
+                        out = std::ofstream(fdesc);
+                        if (out.good()) {
+                            open_success = true;
+                        }
                     }
                 }
             }
