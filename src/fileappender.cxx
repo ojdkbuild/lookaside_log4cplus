@@ -44,6 +44,12 @@
 #include <errno.h>
 #endif
 
+#if defined(_WIN32) && defined(LOG4CPLUS_OFSTREAM_OPEN_NONINHERIT) 
+#include <windows.h>
+#include <io.h>
+#include <fcntl.h>
+#endif
+
 namespace log4cplus
 {
 
@@ -376,7 +382,42 @@ FileAppender::append(const spi::InternalLoggingEvent& event)
 void
 FileAppender::open(std::ios::openmode mode)
 {
-    out.open(LOG4CPLUS_FSTREAM_PREFERED_FILE_NAME(filename).c_str(), mode);
+    auto name = LOG4CPLUS_FSTREAM_PREFERED_FILE_NAME(filename);
+#if defined(_WIN32) && defined(LOG4CPLUS_OFSTREAM_OPEN_NONINHERIT) 
+    // https://social.msdn.microsoft.com/Forums/vstudio/en-US/3e025cb5-bd0d-40d8-a8e7-28c7009bbb67/fstream-file-handle-inheritance?forum=vcgeneral
+    // https://stackoverflow.com/a/5253726/314015
+    bool open_success = false;
+    auto create_attrs = (mode & std::ios::trunc) ? CREATE_ALWAYS : OPEN_ALWAYS;
+    auto handle = ::CreateFileA(name.c_str(), GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            NULL, // lpSecurityAttributes
+            create_attrs, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (INVALID_HANDLE_VALUE != handle) {
+        bool seek_success = true;
+        if (mode & std::ios::ate) {
+            auto err = ::SetFilePointer(handle, 0, NULL, FILE_END);
+            seek_success = INVALID_SET_FILE_POINTER != err;
+        }
+        if (seek_success) {
+            auto fd_flags = (mode & std::ios::app) ? _O_APPEND : 0;
+            auto fd = ::_open_osfhandle(reinterpret_cast<intptr_t>(handle), fd_flags);
+            if (-1 != fd) {
+                auto fdesc = ::_fdopen(fd, "a");
+                if (nullptr != fdesc) {
+                    out = std::ofstream(fdesc);
+                    if (out.good()) {
+                        open_success = true;
+                    }
+                }
+            }
+        }
+    }
+    if (!open_success) {
+        out.setstate(std::ios_base::failbit | std::ios_base::badbit);
+    }
+#else 
+    out.open(name.c_str(), mode);
+#endif
 }
 
 bool
