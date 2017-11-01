@@ -94,7 +94,7 @@ endif ()
 if (LOG4CPLUS_WITH_ICONV AND LIBICONV)
   list (APPEND log4cplus_LIBS ${LIBICONV})
 endif ()
-target_link_libraries (${log4cplus} ${log4cplus_LIBS})
+#target_link_libraries (${log4cplus} ${log4cplus_LIBS})
 
 if (ANDROID)
   # Android does not seem to have SO version support.
