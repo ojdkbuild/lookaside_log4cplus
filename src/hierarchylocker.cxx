@@ -70,7 +70,6 @@ HierarchyLocker::~HierarchyLocker()
     }
     catch(...) {
         helpers::getLogLog().error(LOG4CPLUS_TEXT("HierarchyLocker::dtor()- An error occurred while unlocking"));
-        throw;
     }
 }
 
