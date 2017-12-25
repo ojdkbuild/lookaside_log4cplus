@@ -141,11 +141,11 @@ Queue::get_events (queue_storage_type * buf)
             {
                 assert (! queue.empty ());
 
-                std::size_t const count = queue.size ();
+                std::size_t const qcount = queue.size ();
                 queue.swap (*buf);
                 queue.clear ();
                 flags &= ~QUEUE;
-                for (std::size_t i = 0; i != count; ++i)
+                for (std::size_t i = 0; i != qcount; ++i)
                     sem.unlock ();
 
                 ret_flags = flags | EVENT;

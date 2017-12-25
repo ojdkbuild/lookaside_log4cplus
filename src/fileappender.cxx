@@ -402,13 +402,13 @@ FileAppender::append(const spi::InternalLoggingEvent& event)
 void
 FileAppender::open(std::ios::openmode mode)
 {
-    auto name = LOG4CPLUS_FSTREAM_PREFERED_FILE_NAME(filename);
+    auto fname = LOG4CPLUS_FSTREAM_PREFERED_FILE_NAME(filename);
 #if defined(_WIN32) && defined(LOG4CPLUS_OFSTREAM_OPEN_NONINHERIT) 
     // https://social.msdn.microsoft.com/Forums/vstudio/en-US/3e025cb5-bd0d-40d8-a8e7-28c7009bbb67/fstream-file-handle-inheritance?forum=vcgeneral
     // https://stackoverflow.com/a/5253726/314015
     bool open_success = false;
     auto create_attrs = (mode & std::ios::trunc) ? CREATE_ALWAYS : OPEN_ALWAYS;
-    auto wname = widen(name);
+    auto wname = widen(fname);
     if (!wname.empty()) {
         auto handle = ::CreateFileW(wname.c_str(), GENERIC_WRITE,
                 FILE_SHARE_READ | FILE_SHARE_WRITE,
