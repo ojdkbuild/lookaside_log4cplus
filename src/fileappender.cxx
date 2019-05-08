@@ -439,7 +439,7 @@ FileAppender::open(std::ios::openmode mode)
         out.setstate(std::ios_base::failbit | std::ios_base::badbit);
     }
 #else 
-    out.open(name.c_str(), mode);
+    out.open(fname.c_str(), mode);
 #endif
 }
 
